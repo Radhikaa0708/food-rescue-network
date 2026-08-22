@@ -40,6 +40,7 @@ app.get("/", (req, res) => {
 
 app.get("/api/health", async (req, res) => {
   let database = "disconnected";
+  let databaseError;
 
   try {
     const connected = await checkConnection();
@@ -48,6 +49,9 @@ app.get("/api/health", async (req, res) => {
     }
   } catch (error) {
     database = "disconnected";
+    databaseError = process.env.NODE_ENV === "production"
+      ? "PostgreSQL connection failed"
+      : error.message;
   }
 
   res.json({
@@ -55,6 +59,7 @@ app.get("/api/health", async (req, res) => {
     message: "Food Rescue API is healthy",
     data: {
       database,
+      ...(databaseError ? { databaseError } : {}),
     },
   });
 });

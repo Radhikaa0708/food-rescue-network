@@ -20,6 +20,10 @@ function errorHandler(err, req, res, next) {
     return next(err);
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    console.error(`${req.method} ${req.originalUrl} failed:`, err.message);
+  }
+
   const statusCode = err.statusCode || 500;
   const isProduction = process.env.NODE_ENV === "production";
 

@@ -14,11 +14,11 @@ function createPool() {
   }
 
   return new Pool({
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || "localhost",
     port: Number(process.env.DB_PORT) || 5432,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || "food_rescue",
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "missing-local-password",
     timezone: "UTC",
   });
 }
@@ -26,11 +26,25 @@ function createPool() {
 const pool = createPool();
 
 async function query(text, params) {
-  return pool.query(text, params);
+  try {
+    return await pool.query(text, params);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("PostgreSQL query failed:", error.message);
+    }
+    throw error;
+  }
 }
 
 async function checkConnection() {
-  await pool.query("SELECT 1 AS ok");
+  try {
+    await pool.query("SELECT 1 AS ok");
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error("PostgreSQL connection failed:", error.message);
+    }
+    throw error;
+  }
   return true;
 }
 

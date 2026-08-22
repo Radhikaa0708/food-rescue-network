@@ -1,12 +1,17 @@
 const fs = require('fs');
 const { Pool } = require('pg');
+require('dotenv').config();
+
+const connection = {
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT) || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'missing-local-password',
+};
 
 async function main() {
   const admin = new Pool({
-    host: '127.0.0.1',
-    port: 5433,
-    user: 'postgres',
-    password: '',
+    ...connection,
     database: 'postgres',
   });
 
@@ -17,10 +22,7 @@ async function main() {
   await admin.end();
 
   const appPool = new Pool({
-    host: '127.0.0.1',
-    port: 5433,
-    user: 'postgres',
-    password: '',
+    ...connection,
     database: 'food_rescue',
   });
 
