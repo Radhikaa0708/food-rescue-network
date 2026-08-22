@@ -3,11 +3,17 @@
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
+    email VARCHAR(255),
+    password_hash TEXT,
     role VARCHAR(30) NOT NULL CHECK (role IN ('provider', 'volunteer', 'ngo', 'admin')),
     organization VARCHAR(150),
     location VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE IF EXISTS users
+    ADD COLUMN IF NOT EXISTS email VARCHAR(255),
+    ADD COLUMN IF NOT EXISTS password_hash TEXT;
 
 CREATE TABLE IF NOT EXISTS food_listings (
     id SERIAL PRIMARY KEY,
@@ -52,6 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_food_listings_latitude ON food_listings (latitude
 CREATE INDEX IF NOT EXISTS idx_food_listings_longitude ON food_listings (longitude);
 CREATE INDEX IF NOT EXISTS idx_claims_listing_id ON claims (listing_id);
 CREATE INDEX IF NOT EXISTS idx_claims_volunteer_id ON claims (volunteer_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lower ON users (LOWER(email)) WHERE email IS NOT NULL;
 
 -- At most one active claim per listing
 CREATE UNIQUE INDEX IF NOT EXISTS idx_claims_one_active_per_listing

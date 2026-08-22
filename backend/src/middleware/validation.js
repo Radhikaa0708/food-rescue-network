@@ -106,9 +106,22 @@ const nearbyRules = [
 
 const claimListingRules = [
   param("id").isInt({ gt: 0 }).withMessage("id must be a positive integer"),
-  body("volunteer_id")
-    .isInt({ gt: 0 })
-    .withMessage("volunteer_id must be a positive integer"),
+  handleValidation,
+];
+
+const authRegisterRules = [
+  body("name").trim().notEmpty().withMessage("name is required"),
+  body("email").trim().isEmail().withMessage("email must be valid").normalizeEmail(),
+  body("password")
+    .isString()
+    .isLength({ min: 8 })
+    .withMessage("password must be at least 8 characters"),
+  handleValidation,
+];
+
+const authLoginRules = [
+  body("email").trim().isEmail().withMessage("email must be valid").normalizeEmail(),
+  body("password").isString().notEmpty().withMessage("password is required"),
   handleValidation,
 ];
 
@@ -148,6 +161,8 @@ module.exports = {
   listingStatusRules,
   nearbyRules,
   claimListingRules,
+  authRegisterRules,
+  authLoginRules,
   createUserRules,
   userIdRules,
   claimIdRules,

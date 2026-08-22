@@ -7,6 +7,7 @@ const { checkConnection } = require("./config/database");
 const listingRoutes = require("./routes/listingRoutes");
 const userRoutes = require("./routes/userRoutes");
 const claimRoutes = require("./routes/claimRoutes");
+const authRoutes = require("./routes/authRoutes");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -61,6 +62,7 @@ app.get("/api/health", async (req, res) => {
 app.use("/api/listings", listingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/claims", claimRoutes);
+app.use("/api/auth", authRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

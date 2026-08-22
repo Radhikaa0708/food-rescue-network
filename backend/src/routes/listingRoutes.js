@@ -9,6 +9,7 @@ const {
   nearbyRules,
   claimListingRules,
 } = require("../middleware/validation");
+const { requireAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -22,6 +23,6 @@ router.patch(
   listingStatusRules,
   listingController.updateListingStatus
 );
-router.post("/:id/claim", claimListingRules, claimController.claimListing);
+router.post("/:id/claim", requireAuth, claimListingRules, claimController.claimListing);
 
 module.exports = router;

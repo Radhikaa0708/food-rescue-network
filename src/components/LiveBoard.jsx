@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { LISTINGS } from "../data/listings.js";
+import { useEffect, useState } from "react";
+import { claimListing, getListings } from "../api/api.js";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -10,14 +10,40 @@ const FILTERS = [
 
 export default function LiveBoard() {
   const [filter, setFilter] = useState("all");
-  const [claimedIds, setClaimedIds] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [claimingId, setClaimingId] = useState(null);
 
-  const visible = LISTINGS.filter((l) => filter === "all" || l.tag === filter);
+  useEffect(() => {
+    getListings()
+      .then(setListings)
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const visible = listings.filter((l) => filter === "all" || l.tag === filter);
+
+  const handleClaim = async (id) => {
+    setClaimingId(id);
+    setError("");
+
+    try {
+      const result = await claimListing(id);
+      setListings((prev) => prev.map((item) => (
+        item.id === id ? { ...item, ...result.listing, status: "claimed", claimed_by: result.listing.claimed_by } : item
+      )));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setClaimingId(null);
+    }
+  };
 
   return (
     <section id="board" className="section">
       <div className="section-head">
-        <div className="eyebrow mono">Live board · demo</div>
+        <div className="eyebrow mono">Live board</div>
         <h2>See it move.</h2>
         <p>A sample of what providers and volunteers see in real time. Filter by urgency, claim a listing.</p>
       </div>
@@ -36,8 +62,11 @@ export default function LiveBoard() {
         </div>
 
         <div className="board-list">
-          {visible.map((item) => {
-            const isClaimed = claimedIds.includes(item.id);
+          {loading && <p>Loading listings...</p>}
+          {!loading && error && <p>{error}</p>}
+          {!loading && !error && visible.length === 0 && <p>No listings available.</p>}
+          {!loading && !error && visible.map((item) => {
+            const isClaimed = item.status !== "available";
             return (
               <div className="row" key={item.id}>
                 <div>
@@ -50,9 +79,9 @@ export default function LiveBoard() {
                 <button
                   className={`row-claim${isClaimed ? " done" : ""}`}
                   disabled={isClaimed}
-                  onClick={() => setClaimedIds((prev) => [...prev, item.id])}
+                  onClick={() => handleClaim(item.id)}
                 >
-                  {isClaimed ? "Claimed" : "Claim"}
+                  {isClaimed ? "Claimed" : claimingId === item.id ? "Claiming..." : "Claim"}
                 </button>
               </div>
             );

@@ -21,13 +21,12 @@ function pastIso() {
 }
 
 async function createVolunteer() {
-  const res = await request(app).post("/api/users").send({
+  const res = await request(app).post("/api/auth/register").send({
     name: "Claim Tester",
-    role: "volunteer",
-    organization: "Test Crew",
-    location: "Tirunelveli",
+    email: `claim-${Date.now()}-${Math.random()}@example.com`,
+    password: "secure-password",
   });
-  return res.body.data;
+  return { user: res.body.data.user, token: res.body.data.token };
 }
 
 async function createListing() {
@@ -44,6 +43,11 @@ async function createListing() {
 }
 
 describe("Claims API", () => {
+  test("rejects an unauthenticated claim", async () => {
+    const res = await request(app).post("/api/listings/1/claim");
+    expect(res.status).toBe(401);
+  });
+
   test("database connection is available for claim tests", async () => {
     if (!dbReady) {
       console.warn("PostgreSQL is not reachable for claim tests.");
@@ -59,7 +63,7 @@ describe("Claims API", () => {
 
     const res = await request(app)
       .post(`/api/listings/${listing.id}/claim`)
-      .send({ volunteer_id: volunteer.id });
+      .set("Authorization", `Bearer ${volunteer.token}`);
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -77,12 +81,12 @@ describe("Claims API", () => {
 
     const claimOne = await request(app)
       .post(`/api/listings/${listing.id}/claim`)
-      .send({ volunteer_id: first.id });
+      .set("Authorization", `Bearer ${first.token}`);
     expect(claimOne.status).toBe(201);
 
     const claimTwo = await request(app)
       .post(`/api/listings/${listing.id}/claim`)
-      .send({ volunteer_id: second.id });
+      .set("Authorization", `Bearer ${second.token}`);
 
     expect(claimTwo.status).toBe(409);
     expect(claimTwo.body.success).toBe(false);
@@ -101,7 +105,7 @@ describe("Claims API", () => {
 
     const res = await request(app)
       .post(`/api/listings/${expired.body.data.id}/claim`)
-      .send({ volunteer_id: volunteer.id });
+      .set("Authorization", `Bearer ${volunteer.token}`);
 
     expect(res.status).toBe(409);
   });
@@ -113,7 +117,7 @@ describe("Claims API", () => {
     const listing = await createListing();
     const claimed = await request(app)
       .post(`/api/listings/${listing.id}/claim`)
-      .send({ volunteer_id: volunteer.id });
+      .set("Authorization", `Bearer ${volunteer.token}`);
 
     const claimId = claimed.body.data.claim.id;
 

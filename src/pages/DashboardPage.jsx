@@ -1,22 +1,44 @@
-import { useState, useMemo } from "react";
-import { LISTINGS } from "../data/listings.js";
+import { useEffect, useState, useMemo } from "react";
+import { claimListing, getListings } from "../api/api.js";
 
 export default function DashboardPage() {
-  const [claimedIds, setClaimedIds] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [claimingId, setClaimingId] = useState(null);
+
+  useEffect(() => {
+    getListings()
+      .then(setListings)
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   const stats = useMemo(() => {
-    const urgent = LISTINGS.filter((l) => l.tag === "urgent").length;
-    const claimed = claimedIds.length;
+    const urgent = listings.filter((l) => l.tag === "urgent").length;
+    const claimed = listings.filter((l) => l.status !== "available").length;
     return {
-      total: LISTINGS.length,
+      total: listings.length,
       urgent,
       claimed,
-      open: LISTINGS.length - claimed,
+      open: listings.length - claimed,
     };
-  }, [claimedIds]);
+  }, [listings]);
 
-  const handleClaim = (id) => {
-    setClaimedIds((prev) => [...prev, id]);
+  const handleClaim = async (id) => {
+    setClaimingId(id);
+    setError("");
+
+    try {
+      const result = await claimListing(id);
+      setListings((prev) => prev.map((item) => (
+        item.id === id ? { ...item, ...result.listing, status: "claimed" } : item
+      )));
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setClaimingId(null);
+    }
   };
 
   return (
@@ -53,6 +75,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="dash-table-wrap">
+        {loading && <p>Loading listings...</p>}
+        {!loading && error && <p>{error}</p>}
         <table className="dash-table">
           <thead>
             <tr>
@@ -65,8 +89,8 @@ export default function DashboardPage() {
             </tr>
           </thead>
           <tbody>
-            {LISTINGS.map((item) => {
-              const isClaimed = claimedIds.includes(item.id);
+            {!loading && !error && listings.map((item) => {
+              const isClaimed = item.status !== "available";
               return (
                 <tr key={item.id}>
                   <td>{item.name}</td>
@@ -84,7 +108,7 @@ export default function DashboardPage() {
                       disabled={isClaimed}
                       onClick={() => handleClaim(item.id)}
                     >
-                      {isClaimed ? "Claimed" : "Assign / Claim"}
+                      {isClaimed ? "Claimed" : claimingId === item.id ? "Claiming..." : "Assign / Claim"}
                     </button>
                   </td>
                 </tr>

@@ -9,11 +9,20 @@ function mapUser(row) {
   return {
     id: row.id,
     name: row.name,
+    email: row.email,
     role: row.role,
     organization: row.organization,
     location: row.location,
     created_at: row.created_at,
   };
+}
+
+async function findUserByEmail(email) {
+  const result = await query(
+    "SELECT * FROM users WHERE LOWER(email) = LOWER($1)",
+    [email]
+  );
+  return result.rows[0] || null;
 }
 
 async function createUser(payload) {
@@ -57,5 +66,6 @@ module.exports = {
   createUser,
   listUsers,
   getUserById,
+  findUserByEmail,
   canClaimFood,
 };

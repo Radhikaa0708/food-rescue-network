@@ -4,7 +4,7 @@ async function claimListing(req, res, next) {
   try {
     const result = await claimService.claimListing(
       Number(req.params.id),
-      Number(req.body.volunteer_id)
+      req.user.id
     );
 
     res.status(201).json({
