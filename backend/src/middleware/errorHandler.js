@@ -1,4 +1,4 @@
-module.exports = (err, req, res, next) => {
+function errorHandler(err, req, res, next) {
   console.error("=================================");
   console.error("BACKEND ERROR");
   console.error("Message:", err.message);
@@ -8,10 +8,9 @@ module.exports = (err, req, res, next) => {
   res.status(err.status || 500).json({
     success: false,
     error: {
-      message:
-        process.env.NODE_ENV === "production"
-          ? err.message || "Something went wrong"
-          : err.message,
+      message: err.message || "Something went wrong",
     },
   });
-};
+}
+
+module.exports = errorHandler;
