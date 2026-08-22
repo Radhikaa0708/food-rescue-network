@@ -1,23 +1,44 @@
-require("dotenv").config();
+const { Pool } = require("pg");
 
-const app = require("./src/app");
-const { checkConnection } = require("./src/config/database");
+const isProduction = process.env.NODE_ENV === "production";
 
-const port = Number(process.env.PORT) || 5000;
+let poolConfig;
 
-if (require.main === module) {
-  checkConnection()
-    .then(() => {
-      console.log("Database connected successfully");
-    })
-    .catch(() => {
-      console.error("Database connection unavailable; API will report unhealthy status");
-    })
-    .finally(() => {
-      app.listen(port, () => {
-        console.log(`Food Rescue API listening on port ${port}`);
-      });
-  });
+// Render / production: use DATABASE_URL
+if (process.env.DATABASE_URL) {
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: isProduction
+      ? { rejectUnauthorized: false }
+      : false,
+  };
+} else {
+  // Local development: use individual DB_* variables
+  poolConfig = {
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT) || 5432,
+    database: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    ssl: false,
+  };
 }
 
-module.exports = app;
+const pool = new Pool(poolConfig);
+
+async function checkConnection() {
+  try {
+    await pool.query("SELECT 1");
+    console.log("Database connection successful");
+    return true;
+  } catch (error) {
+    console.error("Database connection failed");
+    console.error("Reason:", error.message);
+    throw error;
+  }
+}
+
+module.exports = {
+  pool,
+  checkConnection,
+};
