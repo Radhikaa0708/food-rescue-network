@@ -1,3 +1,12 @@
+function notFoundHandler(req, res) {
+  res.status(404).json({
+    success: false,
+    error: {
+      message: "Route not found",
+    },
+  });
+}
+
 function errorHandler(err, req, res, next) {
   console.error("=================================");
   console.error("BACKEND ERROR");
@@ -13,4 +22,7 @@ function errorHandler(err, req, res, next) {
   });
 }
 
-module.exports = errorHandler;
+module.exports = {
+  notFoundHandler,
+  errorHandler,
+};

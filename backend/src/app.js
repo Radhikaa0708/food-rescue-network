@@ -8,7 +8,7 @@ const listingRoutes = require("./routes/listingRoutes");
 const userRoutes = require("./routes/userRoutes");
 const claimRoutes = require("./routes/claimRoutes");
 const authRoutes = require("./routes/authRoutes");
-const errorHandler = require("./middleware/errorHandler");
+const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
