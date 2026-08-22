@@ -1,0 +1,38 @@
+{
+  "name": "food-rescue-backend",
+  "version": "1.0.0",
+  "description": "Food Rescue Network API — surplus food listings, claims, and nearby search",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "jest --runInBand --forceExit"
+  },
+  "keywords": [
+    "food-rescue",
+    "express",
+    "postgresql"
+  ],
+  "author": "REDDY",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "jest": "^30.0.5",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFiles": [
+      "dotenv/config"
+    ],
+    "globalTeardown": "<rootDir>/tests/globalTeardown.js"
+  }
+}
