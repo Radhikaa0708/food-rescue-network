@@ -1,4 +1,4 @@
-const { query } = require("../config/database");
+const { pool } = require("../config/database");
 const { AppError } = require("../middleware/errorHandler");
 
 const ALLOWED_TRANSITIONS = {
@@ -32,7 +32,7 @@ function mapListing(row) {
 }
 
 async function markExpiredListings() {
-  await query(
+  await pool.query(
     `UPDATE food_listings
      SET status = 'expired'
      WHERE status = 'available'
@@ -42,14 +42,22 @@ async function markExpiredListings() {
 
 async function createListing(payload) {
   const listingStatus =
-    payload.available_until && new Date(payload.available_until).getTime() <= Date.now()
+    payload.available_until &&
+    new Date(payload.available_until).getTime() <= Date.now()
       ? "expired"
       : "available";
 
-  const result = await query(
+  const result = await pool.query(
     `INSERT INTO food_listings (
-        provider_name, food_type, quantity, description, location,
-        latitude, longitude, available_until, status
+        provider_name,
+        food_type,
+        quantity,
+        description,
+        location,
+        latitude,
+        longitude,
+        available_until,
+        status
      )
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
@@ -69,13 +77,14 @@ async function createListing(payload) {
   return mapListing(result.rows[0]);
 }
 
-async function listListings(filters) {
+async function listListings(filters = {}) {
   await markExpiredListings();
 
   const conditions = [];
   const params = [];
 
   const status = filters.status || "available";
+
   params.push(status);
   conditions.push(`status = $${params.length}`);
 
@@ -93,8 +102,9 @@ async function listListings(filters) {
     conditions.push(`location ILIKE $${params.length}`);
   }
 
-  const result = await query(
-    `SELECT * FROM food_listings
+  const result = await pool.query(
+    `SELECT *
+     FROM food_listings
      WHERE ${conditions.join(" AND ")}
      ORDER BY available_until ASC`,
     params
@@ -106,7 +116,11 @@ async function listListings(filters) {
 async function getListingById(id) {
   await markExpiredListings();
 
-  const result = await query("SELECT * FROM food_listings WHERE id = $1", [id]);
+  const result = await pool.query(
+    "SELECT * FROM food_listings WHERE id = $1",
+    [id]
+  );
+
   const listing = mapListing(result.rows[0]);
 
   if (!listing) {
@@ -120,15 +134,37 @@ async function updateListing(id, payload) {
   const existing = await getListingById(id);
 
   const next = {
-    provider_name: payload.provider_name ?? existing.provider_name,
-    food_type: payload.food_type ?? existing.food_type,
-    quantity: payload.quantity ?? existing.quantity,
+    provider_name:
+      payload.provider_name ?? existing.provider_name,
+
+    food_type:
+      payload.food_type ?? existing.food_type,
+
+    quantity:
+      payload.quantity ?? existing.quantity,
+
     description:
-      payload.description !== undefined ? payload.description : existing.description,
-    location: payload.location !== undefined ? payload.location : existing.location,
-    latitude: payload.latitude !== undefined ? payload.latitude : existing.latitude,
-    longitude: payload.longitude !== undefined ? payload.longitude : existing.longitude,
-    available_until: payload.available_until ?? existing.available_until,
+      payload.description !== undefined
+        ? payload.description
+        : existing.description,
+
+    location:
+      payload.location !== undefined
+        ? payload.location
+        : existing.location,
+
+    latitude:
+      payload.latitude !== undefined
+        ? payload.latitude
+        : existing.latitude,
+
+    longitude:
+      payload.longitude !== undefined
+        ? payload.longitude
+        : existing.longitude,
+
+    available_until:
+      payload.available_until ?? existing.available_until,
   };
 
   const updatedStatus =
@@ -137,7 +173,7 @@ async function updateListing(id, payload) {
       ? "expired"
       : existing.status;
 
-  const result = await query(
+  const result = await pool.query(
     `UPDATE food_listings
      SET provider_name = $1,
          food_type = $2,
@@ -169,6 +205,7 @@ async function updateListing(id, payload) {
 
 async function changeListingStatus(id, nextStatus) {
   const listing = await getListingById(id);
+
   const allowed = ALLOWED_TRANSITIONS[listing.status] || [];
 
   if (listing.status === nextStatus) {
@@ -182,11 +219,15 @@ async function changeListingStatus(id, nextStatus) {
     );
   }
 
-  const claimedBy = nextStatus === "available" ? null : listing.claimed_by;
+  const claimedBy =
+    nextStatus === "available"
+      ? null
+      : listing.claimed_by;
 
-  const result = await query(
+  const result = await pool.query(
     `UPDATE food_listings
-     SET status = $1, claimed_by = $2
+     SET status = $1,
+         claimed_by = $2
      WHERE id = $3
      RETURNING *`,
     [nextStatus, claimedBy, id]
@@ -200,7 +241,10 @@ function isListingCurrentlyAvailable(listing) {
     return false;
   }
 
-  return new Date(listing.available_until).getTime() > Date.now();
+  return (
+    new Date(listing.available_until).getTime() >
+    Date.now()
+  );
 }
 
 module.exports = {
