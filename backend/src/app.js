@@ -49,13 +49,11 @@ app.get("/api/health", async (req, res) => {
     }
   } catch (error) {
     database = "disconnected";
-    databaseError = process.env.NODE_ENV === "production"
-      ? "PostgreSQL connection failed"
-      : error.message;
+    databaseError = process.env.NODE_ENV === "production" ? "PostgreSQL connection failed" : error.message;
   }
 
-  res.json({
-    success: true,
+  res.status(database === "connected" ? 200 : 503).json({
+    success: database === "connected",
     message: "Food Rescue API is healthy",
     data: {
       database,
